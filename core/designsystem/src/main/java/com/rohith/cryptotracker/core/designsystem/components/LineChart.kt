@@ -1,6 +1,5 @@
-package com.rohith.cryptotracker.core.designsystem.components
-
 @file:Suppress("MagicNumber")
+package com.rohith.cryptotracker.core.designsystem.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth

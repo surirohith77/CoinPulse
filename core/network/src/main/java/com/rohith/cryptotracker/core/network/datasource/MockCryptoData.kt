@@ -1,6 +1,5 @@
-package com.rohith.cryptotracker.core.network.datasource
-
 @file:Suppress("MagicNumber", "MaxLineLength")
+package com.rohith.cryptotracker.core.network.datasource
 
 import com.rohith.cryptotracker.core.network.model.CoinDetailDto
 import com.rohith.cryptotracker.core.network.model.CoinDto
