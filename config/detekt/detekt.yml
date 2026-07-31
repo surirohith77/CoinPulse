@@ -44,5 +44,7 @@ style:
   MaxLineLength:
     active: true
     maxLineLength: 160
+
+exceptions:
   TooGenericExceptionCaught:
     active: false # Allowed for fallback/caching data source catch blocks
