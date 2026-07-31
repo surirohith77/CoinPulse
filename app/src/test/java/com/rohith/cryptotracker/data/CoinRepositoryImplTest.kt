@@ -37,7 +37,7 @@ class CoinRepositoryImplTest {
         // Arrange
         val dbEntities = listOf(
             CoinEntity(
-                id = "bitcoin", symbol = "btc", name = "Bitcoin", image = "",
+                id = "bitcoin", symbol = "BTC", name = "Bitcoin", image = "",
                 currentPrice = 60000.0, marketCap = 1.0, marketCapRank = 1,
                 priceChangePercent24h = 2.0, lastUpdated = ""
             )

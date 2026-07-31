@@ -1,6 +1,8 @@
 package com.rohith.cryptotracker.feature.tracker
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import com.rohith.cryptotracker.core.model.CoinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import org.orbitmvi.orbit.Container
@@ -12,7 +14,7 @@ import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
 
 /**
- * ViewModel for the cryptocurrency dashboard managing states and intents via Orbit MVI.
+ * Orbit MVI VM for tracking dashboard state reductions and side effects.
  */
 @HiltViewModel
 class TrackerViewModel @Inject constructor(
@@ -21,12 +23,19 @@ class TrackerViewModel @Inject constructor(
 
     override val container: Container<TrackerState, TrackerSideEffect> =
         container(TrackerState()) {
-            loadCoins()
-            refreshCoins()
+            loadData()
         }
 
-    private fun loadCoins() = intent {
+    fun loadData() = intent {
         reduce { state.copy(isLoading = true) }
+        
+        // Fetch background updates from network cache
+        val syncResult = repository.refreshCoins()
+        syncResult.onFailure { error ->
+            postSideEffect(TrackerSideEffect.ShowError(error.localizedMessage ?: "Network sync failed"))
+        }
+
+        // Collect database flow for UI updates
         repository.getCoins().collect { coinList ->
             reduce {
                 state.copy(
@@ -42,7 +51,7 @@ class TrackerViewModel @Inject constructor(
         val result = repository.refreshCoins()
         reduce { state.copy(isRefreshing = false) }
         result.onFailure { error ->
-            postSideEffect(TrackerSideEffect.ShowError(error.localizedMessage ?: "Network synch failed"))
+            postSideEffect(TrackerSideEffect.ShowError(error.localizedMessage ?: "Network sync failed"))
         }
     }
 

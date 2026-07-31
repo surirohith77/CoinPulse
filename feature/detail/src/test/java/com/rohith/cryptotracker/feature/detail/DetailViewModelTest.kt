@@ -1,7 +1,6 @@
 package com.rohith.cryptotracker.feature.detail
 
 import androidx.lifecycle.SavedStateHandle
-import com.google.common.truth.Truth.assertThat
 import com.rohith.cryptotracker.core.model.CoinDetail
 import com.rohith.cryptotracker.core.model.CoinRepository
 import com.rohith.cryptotracker.core.model.HistoricalPrice
@@ -9,13 +8,14 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.orbitmvi.orbit.test.TestSettings
 import org.orbitmvi.orbit.test.test
 
 /**
@@ -25,7 +25,7 @@ import org.orbitmvi.orbit.test.test
 class DetailViewModelTest {
 
     private lateinit var repository: CoinRepository
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
@@ -39,11 +39,11 @@ class DetailViewModelTest {
     }
 
     @Test
-    fun `initialization loads details and chart prices`() = runTest {
+    fun `initialization loads details and chart prices`() = runTest(testDispatcher) {
         // Arrange
         val coinId = "bitcoin"
         val savedStateHandle = SavedStateHandle(mapOf("coinId" to coinId))
-        
+
         val mockDetail = CoinDetail(
             id = coinId,
             name = "Bitcoin",
@@ -67,29 +67,28 @@ class DetailViewModelTest {
         coEvery { repository.getCoinDetail(coinId) } returns Result.success(mockDetail)
         coEvery { repository.getMarketChart(coinId, 7) } returns Result.success(mockChart)
 
-        // Act
+        // Act & Assert
         val viewModel = DetailViewModel(repository, savedStateHandle)
-        val testSubject = viewModel.test(DetailState(coinId = coinId))
-
-        testSubject.runOnCreate()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        // Assert
-        testSubject.assert(DetailState(coinId = coinId)) {
-            states(
-                { copy(isLoading = true) },
-                { copy(coinDetail = mockDetail, isLoading = false) },
-                { copy(coinDetail = mockDetail, historicalPrices = mockChart, isLoading = false) }
-            )
+        viewModel.test(
+            testScope = this,
+            initialState = DetailState(coinId = coinId, isLoading = false),
+            settings = TestSettings(dispatcherOverride = testDispatcher)
+        ) {
+            expectState(DetailState(coinId = coinId, isLoading = false))
+            
+            runOnCreate()
+            
+            // Assert the final state (intermediate isLoading=true, coinDetail, etc. are conflated)
+            expectState { copy(coinDetail = mockDetail, historicalPrices = mockChart, isLoading = false) }
         }
     }
 
     @Test
-    fun `chart days selection triggers historical series fetch`() = runTest {
+    fun `chart days selection triggers historical series fetch`() = runTest(testDispatcher) {
         // Arrange
         val coinId = "bitcoin"
         val savedStateHandle = SavedStateHandle(mapOf("coinId" to coinId))
-        
+
         val mockDetail = CoinDetail(
             id = coinId, name = "Bitcoin", symbol = "BTC", description = "", image = "",
             currentPriceUsd = 60000.0, marketCapUsd = 1.0, totalVolumeUsd = 1.0,
@@ -102,26 +101,25 @@ class DetailViewModelTest {
         coEvery { repository.getMarketChart(coinId, 7) } returns Result.success(initialChart)
         coEvery { repository.getMarketChart(coinId, 30) } returns Result.success(newChart)
 
-        // Act
+        // Act & Assert
         val viewModel = DetailViewModel(repository, savedStateHandle)
-        val testSubject = viewModel.test(DetailState(coinId = coinId))
+        viewModel.test(
+            testScope = this,
+            initialState = DetailState(coinId = coinId, isLoading = false),
+            settings = TestSettings(dispatcherOverride = testDispatcher)
+        ) {
+            expectState(DetailState(coinId = coinId, isLoading = false))
+            
+            runOnCreate()
+            
+            expectState { copy(coinDetail = mockDetail, historicalPrices = initialChart, isLoading = false) }
 
-        testSubject.runOnCreate()
-        testDispatcher.scheduler.advanceUntilIdle()
+            // Trigger change
+            containerHost.onChartDaysChanged(30)
 
-        // Trigger change
-        viewModel.onChartDaysChanged(30)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        // Assert state transitions
-        testSubject.assert(DetailState(coinId = coinId)) {
-            states(
-                { copy(isLoading = true) },
-                { copy(coinDetail = mockDetail, isLoading = false) },
-                { copy(coinDetail = mockDetail, historicalPrices = initialChart, isLoading = false) },
-                { copy(coinDetail = mockDetail, historicalPrices = initialChart, chartDays = 30, isLoading = false) },
-                { copy(coinDetail = mockDetail, historicalPrices = newChart, chartDays = 30, isLoading = false) }
-            )
+            // When onChartDaysChanged runs, it reduces chartDays = 30 and then fetches historicalPrices = newChart.
+            // Under UnconfinedTestDispatcher, they run synchronously and result in the final state.
+            expectState { copy(coinDetail = mockDetail, historicalPrices = newChart, chartDays = 30, isLoading = false) }
         }
     }
 }

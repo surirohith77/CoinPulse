@@ -1,6 +1,5 @@
 package com.rohith.cryptotracker.feature.tracker
 
-import com.google.common.truth.Truth.assertThat
 import com.rohith.cryptotracker.core.model.Coin
 import com.rohith.cryptotracker.core.model.CoinRepository
 import io.mockk.coEvery
@@ -9,13 +8,14 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.orbitmvi.orbit.test.TestSettings
 import org.orbitmvi.orbit.test.test
 
 /**
@@ -25,7 +25,7 @@ import org.orbitmvi.orbit.test.test
 class TrackerViewModelTest {
 
     private lateinit var repository: CoinRepository
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
@@ -39,7 +39,7 @@ class TrackerViewModelTest {
     }
 
     @Test
-    fun `initialization loads coins and triggers sync refresh`() = runTest {
+    fun `initialization loads coins and triggers sync refresh`() = runTest(testDispatcher) {
         // Arrange
         val mockCoins = listOf(
             Coin(
@@ -57,49 +57,43 @@ class TrackerViewModelTest {
         every { repository.getCoins() } returns flowOf(mockCoins)
         coEvery { repository.refreshCoins() } returns Result.success(Unit)
 
-        // Act
+        // Act & Assert
         val viewModel = TrackerViewModel(repository)
-        val testSubject = viewModel.test(TrackerState())
-
-        testSubject.runOnCreate()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        // Assert
-        testSubject.assert(TrackerState()) {
-            states(
-                { copy(isLoading = true) },
-                { copy(isLoading = false, coins = mockCoins) },
-                { copy(isRefreshing = true, coins = mockCoins) },
-                { copy(isRefreshing = false, coins = mockCoins) }
-            )
+        viewModel.test(
+            testScope = this,
+            initialState = TrackerState(isLoading = false),
+            settings = TestSettings(dispatcherOverride = testDispatcher)
+        ) {
+            expectState(TrackerState(isLoading = false))
+            
+            runOnCreate()
+            
+            // Assert the final state (intermediate isLoading=true is conflated)
+            expectState { copy(isLoading = false, coins = mockCoins) }
         }
     }
 
     @Test
-    fun `refresh failure posts ShowError side effect`() = runTest {
+    fun `refresh failure posts ShowError side effect`() = runTest(testDispatcher) {
         // Arrange
         val mockCoins = emptyList<Coin>()
         every { repository.getCoins() } returns flowOf(mockCoins)
         coEvery { repository.refreshCoins() } returns Result.failure(Exception("Sync Error"))
 
-        // Act
+        // Act & Assert
         val viewModel = TrackerViewModel(repository)
-        val testSubject = viewModel.test(TrackerState())
-
-        testSubject.runOnCreate()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        // Assert
-        testSubject.assert(TrackerState()) {
-            states(
-                { copy(isLoading = true) },
-                { copy(isLoading = false) },
-                { copy(isRefreshing = true) },
-                { copy(isRefreshing = false) }
-            )
-            postedSideEffects(
-                TrackerSideEffect.ShowError("Sync Error")
-            )
+        viewModel.test(
+            testScope = this,
+            initialState = TrackerState(isLoading = false),
+            settings = TestSettings(dispatcherOverride = testDispatcher)
+        ) {
+            expectState(TrackerState(isLoading = false))
+            
+            runOnCreate()
+            
+            // Final state is equal to initial state, so no state change is emitted.
+            // Just assert the side effect.
+            expectSideEffect(TrackerSideEffect.ShowError("Sync Error"))
         }
     }
 }

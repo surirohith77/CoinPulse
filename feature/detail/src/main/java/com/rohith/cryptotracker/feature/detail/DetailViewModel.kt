@@ -23,36 +23,38 @@ class DetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel(), ContainerHost<DetailState, DetailSideEffect> {
 
-    private val route = savedStateHandle.toRoute<DetailRoute>()
-    private val coinId = route.coinId
+    private val coinId: String = savedStateHandle["coinId"] ?: ""
 
     override val container: Container<DetailState, DetailSideEffect> =
         container(DetailState(coinId = coinId)) {
-            loadCoinDetail()
-            loadHistoricalChart()
+            loadData()
         }
 
-    fun loadCoinDetail() = intent {
+    fun loadData() = intent {
         reduce { state.copy(isLoading = true) }
-        val result = repository.getCoinDetail(state.coinId)
-        result.onSuccess { detail ->
-            reduce { state.copy(coinDetail = detail, isLoading = false) }
+        
+        val detailResult = repository.getCoinDetail(state.coinId)
+        detailResult.onSuccess { detail ->
+            reduce { state.copy(coinDetail = detail) }
         }.onFailure { error ->
-            reduce { state.copy(error = error.localizedMessage, isLoading = false) }
+            reduce { state.copy(error = error.localizedMessage) }
             postSideEffect(DetailSideEffect.ShowToast(error.localizedMessage ?: "Failed loading coin details"))
         }
-    }
 
-    fun loadHistoricalChart() = intent {
-        val result = repository.getMarketChart(state.coinId, state.chartDays)
-        result.onSuccess { prices ->
+        val chartResult = repository.getMarketChart(state.coinId, state.chartDays)
+        chartResult.onSuccess { prices ->
             reduce { state.copy(historicalPrices = prices) }
         }
+
+        reduce { state.copy(isLoading = false) }
     }
 
     fun onChartDaysChanged(days: Int) = intent {
         reduce { state.copy(chartDays = days) }
-        loadHistoricalChart()
+        val result = repository.getMarketChart(state.coinId, state.chartDays)
+        result.onSuccess { prices ->
+            reduce { state.copy(historicalPrices = prices) }
+        }
     }
 
     fun onBackClicked() = intent {
