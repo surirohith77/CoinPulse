@@ -2,6 +2,11 @@
 
 A production-grade, offline-first Android application designed with modern software engineering standards. This repository demonstrates clean architecture boundaries, multi-module setups, Orbit MVI, type-safe Jetpack Compose navigation, and robust unit-testing suites.
 
+<p align="center">
+  <img src="art/screenshot_tracker.png" width="45%" />
+  <img src="art/screenshot_detail.png" width="45%" />
+</p>
+
 ---
 
 ## 💼 Business & Engineering Value
