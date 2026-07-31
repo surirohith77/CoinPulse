@@ -1,0 +1,48 @@
+naming:
+  FunctionNaming:
+    active: true
+    ignoreAnnotated:
+      - 'Composable'
+
+complexity:
+  LongMethod:
+    active: true
+    ignoreAnnotated:
+      - 'Composable'
+  LongParameterList:
+    active: true
+    ignoreAnnotated:
+      - 'GET'
+      - 'POST'
+      - 'PUT'
+      - 'DELETE'
+      - 'Query'
+      - 'Path'
+  CyclomaticComplexMethod:
+    active: true
+    ignoreAnnotated:
+      - 'Composable'
+
+style:
+  MagicNumber:
+    active: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '7'
+      - '24'
+      - '30'
+      - '100'
+  MaxLineLength:
+    active: true
+    maxLineLength: 160
+  TooGenericExceptionCaught:
+    active: false # Allowed for fallback/caching data source catch blocks

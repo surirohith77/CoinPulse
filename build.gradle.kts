@@ -15,6 +15,7 @@ subprojects {
     // Configure detekt rules if needed, or use defaults
     detekt {
         toolVersion = "1.23.6"
+        config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
         buildUponDefaultConfig = true
         allRules = false
     }
