@@ -20,7 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CryptoTracker"
+rootProject.name = "CoinPulse"
 
 // Include app module
 include(":app")

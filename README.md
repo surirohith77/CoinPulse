@@ -1,6 +1,17 @@
-# Modern Multi-Module Crypto Tracker Showcase
+# CoinPulse — Modern Multi-Module Crypto Tracker
 
 A production-grade, offline-first Android application designed with modern software engineering standards. This repository demonstrates clean architecture boundaries, multi-module setups, Orbit MVI, type-safe Jetpack Compose navigation, and robust unit-testing suites.
+
+---
+
+## 💼 Business & Engineering Value
+
+When building software at scale, architecture directly impacts business performance. **CoinPulse** is engineered to address common scaling challenges in commercial environments:
+
+* **Modular Scalability**: By decoupling features into independent Gradle modules, build times are optimized, merge conflicts are minimized in team settings, and code ownership boundaries are clean.
+* **Offline Resilience (Zero-Latency UI)**: Offline-first architecture ensures that users have immediate access to data upon opening the app, regardless of network conditions (e.g., in subways or areas with low connectivity). Caching remote API payloads locally in Room serves as a single source of truth.
+* **SDK Dependency Minimization**: By drawing custom historical trend graphs directly on a Compose `Canvas` using cubic Bezier splines, the app avoids importing heavy third-party plotting libraries. This reduces the final APK size and minimizes external security/licensing risks.
+* **Robust Demo Reliability**: Public APIs frequently rate-limit requests. CoinPulse handles transient network errors and rate-limiting responses (`HTTP 429`) by gracefully falling back to a mock local database sync, ensuring the app remains fully functional for reviewers at all times.
 
 ---
 
