@@ -28,6 +28,7 @@ abstract class NetworkModule {
     companion object {
 
         private const val BASE_URL = "https://api.coingecko.com/api/v3/"
+        private const val TIMEOUT_SECONDS = 15L
 
         @Provides
         @Singleton
@@ -37,8 +38,8 @@ abstract class NetworkModule {
             }
             return OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
+                .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .build()
         }
 
